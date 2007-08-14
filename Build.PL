@@ -11,6 +11,7 @@ my $builder = Module::Build->new(
     requires          => {
         'Class::DBI' => 0,
         'mixin'      => 0,
+        'SQL::Abstract' => 0,
     },
     add_to_cleanup => ['Class-DBI-Audit-*'],
 );

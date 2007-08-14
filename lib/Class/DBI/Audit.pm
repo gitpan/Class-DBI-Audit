@@ -98,7 +98,7 @@ will track the changes, writing them to the auditTable.
 The fourth returns a history of changes to a column (i.e. the
 data from the audit table) as an array of hashrefs.
 
-Only columns in the 'Audit' group are auditted.  Set this
+Only columns in the 'Audit' group are audited.  Set this
 like so :
 
     __PACKAGE__->columns(Audit => qw/first_name last_name);
@@ -119,7 +119,7 @@ package Class::DBI::Audit;
 use mixin::with 'Class::DBI';
 use SQL::Abstract;
 use strict;
-our $VERSION=0.01;
+our $VERSION=0.02;
 
 =item auditColumns
 
