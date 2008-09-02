@@ -37,14 +37,21 @@ $ENV{REMOTE_USER} = 'jennifer_lopez123';
 $ENV{REQUEST_URI}  = '/register';
 $ENV{REMOTE_ADDR} = '000.000.000';
 
+sub do_transaction(&) {
+    my $sub = shift;
+    Artist->db_Main->begin_work;
+    $sub->();
+    Artist->db_Main->commit;
+}
+
 my $id;
-{
+do_transaction {
     my $artist = Artist->create_test_artist;
     ok +$artist, "Create a test artist";
     $id = $artist->id;
-}
+};
 
-{
+do_transaction {
     $ENV{REMOTE_USER} = 'jenny_lopez';
     $ENV{REQUEST_URI}  = '/change_name';
     $ENV{REMOTE_ADDR} = '867.5309';
@@ -53,9 +60,9 @@ my $id;
     is $artist->first_name, 'Jennifer', 'first name was set properly';
     $artist->first_name('Jenny');
     $artist->update;
-}
+};
 
-{
+do_transaction {
     $ENV{REMOTE_USER} = 'j_lo';
     $ENV{REQUEST_URI}  = '/change_name';
     $ENV{REMOTE_ADDR} = '99';
@@ -64,7 +71,7 @@ my $id;
     $artist->first_name('J');
     $artist->last_name('Lo');
     $artist->update;
-}
+};
 
 my $artist = Artist->retrieve($id);
 
@@ -79,27 +86,33 @@ my @last_names = map $_->{value_after}, $artist->column_history('last_name');
 is_deeply( \@last_names, [qw(Lopez Lo)], 'stored history of another column' );
 
 # Try changing a numeric value
-{ $ENV{REMOTE_ADDR} = 23; $artist->age(23);    $artist->update; }
+do_transaction { $ENV{REMOTE_ADDR} = 23; $artist->age(23);    $artist->update; };
 is $artist->age, 23, 'set age';
-{ $ENV{REMOTE_ADDR} = 29; $artist->age(29);    $artist->update; }
+do_transaction { $ENV{REMOTE_ADDR} = 29; $artist->age(29);    $artist->update; };
 is $artist->age, 29, 'set age';
-{ $ENV{REMOTE_ADDR} = 99; $artist->age('029'); $artist->update; }
+do_transaction { $ENV{REMOTE_ADDR} = 99; $artist->age('029'); $artist->update; };
 is $artist->age, 29, 'set age';
-{ $ENV{REMOTE_ADDR} = 33; $artist->age(33);    $artist->update; }
+do_transaction { $ENV{REMOTE_ADDR} = 33; $artist->age(33);    $artist->update; };
 is $artist->age, 33, 'set age';
 my @ages = map $_->{value_after}, $artist->column_history('age');
-is_deeply( \@ages, [undef, 23,29,33 ], 'no note for same numeric value');
+is_deeply( \@ages, [23,29,33 ], 'no note for same numeric value');
 
+do_transaction {
 $artist->last_name(' ' x 10);
 $artist->update;
+};
 
+do_transaction {
 $artist->last_name('   ');
 $artist->update;
+};
 
 @last_names = map $_->{value_after}, $artist->column_history('last_name');
 ok @last_names==3, 'no extra audit entries for whitespace';
 
+do_transaction {
 $artist->delete;
+};
 
 my $queries = Artist->db_Main->selectcol_arrayref('select query_type from artist_audit');
 

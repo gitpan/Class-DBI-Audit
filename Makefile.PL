@@ -13,6 +13,7 @@ WriteMakefile(
         'Class::DBI' => 0,
         'mixin'      => 0,
         'SQL::Abstract' => 0,
+        'DBD::SQLite' => '== 1.12',
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'Class-DBI-Audit-*' },

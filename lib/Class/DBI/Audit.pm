@@ -116,10 +116,12 @@ tables get big quickly, you'll probably want several tables.
 =cut
 
 package Class::DBI::Audit;
+use Carp;
 use mixin::with 'Class::DBI';
 use SQL::Abstract;
 use strict;
-our $VERSION=0.02;
+use warnings;
+our $VERSION=0.04;
 
 =item auditColumns
 
@@ -187,6 +189,7 @@ sub _audit_table {
 # taken from the man page for DBI, as an example of prepare_cached
 sub _insert_hash {
    my ($dbh,$table, $field_values) = @_;
+   Carp::cluck("adding audit data for $table but we are not in a transaction") if $dbh->{AutoCommit};
    # sort to keep field order, and thus sql, stable for prepare_cached
    my @fields = sort keys %$field_values;
    my @values = @{$field_values}{@fields};
@@ -272,7 +275,7 @@ sub _audit_column_values {
           : $how->[0] eq 'from_sub'    ? _get_from_sub($how->[1])
           : die("unknown column specification: $how->[0]");
     }
-    $h{parent_id} = $obj->id;
+    defined($h{parent_id} = $obj->id) or Carp::confess("no parent id");
     return %h;
 }
 
@@ -306,6 +309,7 @@ sub after_create {
     )->fetch_hash;
     for my $column ( $obj->columns('Audit') ) {
         my $val = $new->{$column};
+        next unless defined($val);
         _insert_hash(
             $obj->db_Main(),
             _audit_table($obj),
@@ -437,7 +441,7 @@ next value_before should be the previous value_after); this is intentional,
 since it'll cause any non-audited changes to the cdbi table to show up.
 
 All the triggers get data directly from the database using the primary key + table +
-primary key value.  This is to avoid side affects (e.g. accidentally populating
+primary key value.  This is to avoid side effects (e.g. accidentally populating
 some fields of the object), and to ensure that the audit tables contain a record
 of the actual data in the table, rather than anything in memory, or anything
 that was inflated or filtered via select triggers.

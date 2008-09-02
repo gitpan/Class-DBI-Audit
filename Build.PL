@@ -12,6 +12,7 @@ my $builder = Module::Build->new(
         'Class::DBI' => 0,
         'mixin'      => 0,
         'SQL::Abstract' => 0,
+        'DBD::SQLite' => '== 1.12',
     },
     add_to_cleanup => ['Class-DBI-Audit-*'],
 );
